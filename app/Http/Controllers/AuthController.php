@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use http\Env\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -27,22 +28,23 @@ class AuthController extends Controller
             'token' => $token
         ];
 
-        return response($response, 201);
+        return response()
+            ->json($response, 201);
     }
 
     public function login(Request $request)
     {
         $fields = $request->validate([
-            'email' => 'required|string',
+            'email' => 'required|string|exists:users,email',
             'password' => 'required|string'
         ]);
         $user = User::where('email', $fields['email'])->first();
+
         if (!$user || !Hash::check($fields['password'], $user->password)) {
-            return response(
-                [
-                    "code" => "401",
-                    "message" => "Invalid credentials."
-                ], 401);
+            return response()->json([
+                "code" => "401",
+                "message" => "Invalid credentials."
+            ], 401);
         }
         $token = $user->createToken('app_token')->plainTextToken;
 
@@ -52,13 +54,13 @@ class AuthController extends Controller
             'token' => $token
         ];
 
-        return response($response, 201);
+        return response()->json($response, 201);
     }
 
     public function logout(Request $request)
     {
         auth()->user()->tokens()->delete();
-        return response([
+        return response()->json([
             'message' => 'Logged out.'
         ]);
     }

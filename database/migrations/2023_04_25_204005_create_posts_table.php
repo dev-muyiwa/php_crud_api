@@ -15,8 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('author');
             $table->longText('content');
-            $table->string('updated_at');
-            $table->string('created_at');
+            $table->timestamps();
         });
     }
 

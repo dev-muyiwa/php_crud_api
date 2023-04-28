@@ -19,18 +19,31 @@ use Illuminate\Support\Facades\Route;
 //Route::resource('posts', PostController::class);
 
 // Public Routes
-Route::post('register', [AuthController::class, 'register']);
-Route::post('login', [AuthController::class, 'login']);
 
-Route::get('posts', [PostController::class, 'index']);
+
+Route::get('posts', [PostController::class, 'index'])->name('posts');
 Route::get('posts/{id}', [PostController::class, 'show']);
 Route::get('posts/search/{name}', [PostController::class, 'search']);
 
 
-// Protected Routes
-Route::group(['middleware' => ['auth:sanctum']], function () {
-    Route::post('posts', [PostController::class, 'store']);
-    Route::put('posts/{id}', [PostController::class, 'update']);
-    Route::delete('posts/{id}', [PostController::class, 'destroy']);
-    Route::post('logout', [AuthController::class, 'logout']);
+Route::controller(AuthController::class)->group(function () {
+    Route::post('register', [AuthController::class, 'register']);
+    Route::post('login', [AuthController::class, 'login']);
+    Route::post('logout', 'logout')->middleware('auth-sanctum');
 });
+// Protected Routes
+Route::prefix('posts')
+    ->controller(PostController::class)
+    ->middleware('auth-sanctum')
+    ->group(function () {
+
+        Route::withoutMiddleware('auth-sanctum')->group(function () {
+            Route::get('', 'index')->name('posts');
+            Route::get('{id}', 'show');
+            Route::get('search/{name}', 'search');
+        });
+
+        Route::post('', 'store');
+        Route::put('{id}', 'update');
+        Route::delete('{id}', 'destroy');
+    });

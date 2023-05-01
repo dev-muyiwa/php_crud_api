@@ -3,18 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use http\Env\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function register(Request $request): JsonResponse
     {
         $fields = $request->validate([
             'name' => 'required|string',
             'email' => 'required|string|unique:users,email',
-            'password' => 'required|string|confirmed'
+            'password' => 'required|string'
         ]);
         $user = User::create([
             'name' => $fields['name'],
@@ -32,13 +32,13 @@ class AuthController extends Controller
             ->json($response, 201);
     }
 
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
         $fields = $request->validate([
             'email' => 'required|string|exists:users,email',
             'password' => 'required|string'
         ]);
-        $user = User::where('email', $fields['email'])->first();
+        $user = User::where('email', $fields['email'])->firstOrFail();
 
         if (!$user || !Hash::check($fields['password'], $user->password)) {
             return response()->json([
@@ -47,6 +47,7 @@ class AuthController extends Controller
             ], 401);
         }
         $token = $user->createToken('app_token')->plainTextToken;
+        $user->save();
 
         $response = [
             'code' => '201',
@@ -54,10 +55,10 @@ class AuthController extends Controller
             'token' => $token
         ];
 
-        return response()->json($response, 201);
+        return response()->json($response, 200);
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
         auth()->user()->tokens()->delete();
         return response()->json([

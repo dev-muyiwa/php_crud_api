@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,35 +17,70 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-
-//Route::resource('posts', PostController::class);
-
-// Public Routes
-
-
-Route::get('posts', [PostController::class, 'index'])->name('posts');
-Route::get('posts/{id}', [PostController::class, 'show']);
-Route::get('posts/search/{name}', [PostController::class, 'search']);
-
-
-Route::controller(AuthController::class)->group(function () {
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('login', [AuthController::class, 'login']);
-    Route::post('logout', 'logout')->middleware('auth-sanctum');
-});
-// Protected Routes
-Route::prefix('posts')
-    ->controller(PostController::class)
-    ->middleware('auth-sanctum')
+Route::prefix("auth")
+    ->controller(AuthController::class)
     ->group(function () {
+        Route::post('register', 'register');
+        Route::post('login', 'login');
+        Route::post('logout', 'logout')->middleware('auth:sanctum');
+    });
 
-        Route::withoutMiddleware('auth-sanctum')->group(function () {
-            Route::get('', 'index')->name('posts');
-            Route::get('{id}', 'show');
-            Route::get('search/{name}', 'search');
-        });
+Route::prefix("users/{user}")
+    ->middleware(["auth:sanctum", "checkUserId"])
+    ->group(function () {
+        Route::get("", [UserController::class, "getUser"]);
 
-        Route::post('', 'store');
-        Route::put('{id}', 'update');
-        Route::delete('{id}', 'destroy');
+        Route::prefix("posts")
+            ->controller(PostController::class)
+            ->group(function () {
+                Route::get("", "getAllPosts");
+                Route::get("search", "searchPostsByTitle");
+                Route::post("", "createPost");
+
+                Route::middleware("checkResourceId")
+                    ->group(function () {
+                        Route::get("{post}", "getPost");
+                        Route::put("{post}", "updatePost");
+                        Route::delete("{post}", "deletePost");
+                        Route::controller(CommentController::class)
+                            ->post("{post}/comments", "createComment");
+                    });
+
+            });
+
+        Route::prefix("comments")
+            ->controller(CommentController::class)
+            ->group(function () {
+                Route::get("", "getAllComments");
+//                Route::post("", "createComment");
+            });
+    });
+
+
+Route::prefix("posts")
+    ->controller(PostController::class)
+    ->group(function () {
+        Route::get("", "getAllPosts");
+        Route::get("search", "searchPostsByTitle");
+
+        Route::middleware("auth:sanctum")
+            ->group(function () {
+                Route::post("", "createPost");
+                Route::get("{post}", "getPost");
+
+                Route::middleware("checkResourceId")
+                    ->group(function () {
+                        Route::put("{post}", "updatePost");
+                        Route::delete("{post}", "deletePost");
+
+                        Route::controller(CommentController::class)
+                            ->withoutMiddleware("checkResourceId")
+                            ->group(function () {
+                                Route::get("{post}/comments", "getAllComments");
+                                Route::post("{post}/comments", "createComment");
+                            });
+                    });
+            });
+
+
     });

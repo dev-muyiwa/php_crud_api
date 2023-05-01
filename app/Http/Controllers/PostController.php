@@ -3,47 +3,98 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PostController extends Controller
 {
-    public function index(): JsonResponse
+    /**
+     * Returns a list of Post associated to a user.
+     *
+     * @param User $user
+     * @return JsonResponse
+     */
+    public function getAllPosts(): JsonResponse
     {
         $posts = Post::all();
-        return response()->json($posts);
+        return response()->json($posts, 200);
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'author' => 'required',
-            'content' => 'required'
-        ]);
-        $post = Post::create($request->all());
-        return response()->json($post, 201);
-    }
 
-    public function show($id)
+    /**
+     * Returns a post.
+     *
+     * @param User $user
+     * @param Post $post
+     * @return JsonResponse
+     */
+    public function getPost(User $user, Post $post): JsonResponse
     {
-        $post = Post::find($id);
         return response()->json($post);
     }
 
-    public function update(Request $request, $id)
+
+    /**
+     * Returns a list of posts based on the search query.
+     *
+     * @param Request $request
+     * @param User $user
+     * @return JsonResponse
+     */
+    public function searchPostsByTitle(Request $request, User $user): JsonResponse
     {
-        $post = Post::find($id);
+        $search = $request->input('search');
+
+        $posts = $user->posts()
+            ->when($search, function ($query, $search) {
+                return $query->where('title', 'LIKE', '%' . $search . '%');
+            })
+            ->get();
+
+        return response()->json($posts);
+    }
+
+    /**
+     * Creates a new post that corresponds to a particular user.
+     *
+     * @param Request $request
+     * @param User $user
+     * @return JsonResponse
+     */
+    public function createPost(Request $request): JsonResponse
+    {
+        $id = Auth::id();
+        $user = User::findOrFail($id);
+        $post = $user->posts()->create($request->all());
+        return response()->json($post, 201);
+    }
+
+    /**
+     * Modifies the content of a post.
+     *
+     * @param Request $request
+     * @param User $user
+     * @param Post $post
+     * @return JsonResponse
+     */
+    public function updatePost(Request $request, User $user, Post $post): JsonResponse
+    {
         $post->update($request->all());
         return response()->json($post);
     }
 
-    public function search($author) {
-        return Post::where('author', 'like', '%'.$author.'%')->get();
-    }
-
-    public function destroy($id)
+    /**
+     * Delete post.
+     *
+     * @param User $user
+     * @param Post $post
+     * @return JsonResponse
+     */
+    public function deletePost(User $user, Post $post): JsonResponse
     {
-        Post::destroy($id);
-        return response()->json("Post deleted successfully.", 204);
+        $post->delete();
+        return response()->json("Post " . $post->id . " deleted successfully.");
     }
 }

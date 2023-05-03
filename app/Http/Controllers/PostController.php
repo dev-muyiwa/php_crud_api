@@ -11,56 +11,50 @@ use Illuminate\Support\Facades\Auth;
 class PostController extends Controller
 {
     /**
-     * Returns a list of Post associated to a user.
+     * Checks if there is a query attached to the url.
+     * If true, it returns a list of posts based on that query.
+     * Else, it returns all the posts.
      *
-     * @param User $user
+     * @param Request $request
      * @return JsonResponse
      */
-    public function getAllPosts(): JsonResponse
+    public function getAllPosts(Request $request): JsonResponse
     {
-        $posts = Post::all();
+        $query = $request->input('q');
+//        try {
+        if ($query) {
+            $posts = Post::where('title', 'like', '%' . $query . '%')
+                ->get();
+        } else {
+            $posts = Post::all();
+        }
+
         return response()->json($posts, 200);
+//        } catch (Exception $e) {
+//            if ($query == null)
+//            return $this->onError(message: "Invalid query type.");
+//        }
     }
 
 
     /**
      * Returns a post.
      *
-     * @param User $user
      * @param Post $post
      * @return JsonResponse
      */
-    public function getPost(User $user, Post $post): JsonResponse
+    public function getPost(Post $post): JsonResponse
     {
-        return response()->json($post);
-    }
-
-
-    /**
-     * Returns a list of posts based on the search query.
-     *
-     * @param Request $request
-     * @param User $user
-     * @return JsonResponse
-     */
-    public function searchPostsByTitle(Request $request, User $user): JsonResponse
-    {
-        $search = $request->input('search');
-
-        $posts = $user->posts()
-            ->when($search, function ($query, $search) {
-                return $query->where('title', 'LIKE', '%' . $search . '%');
-            })
-            ->get();
-
-        return response()->json($posts);
+        return $this->onSuccess(
+            data: $post,
+            message: "Post has been retrieved."
+        );
     }
 
     /**
      * Creates a new post that corresponds to a particular user.
      *
      * @param Request $request
-     * @param User $user
      * @return JsonResponse
      */
     public function createPost(Request $request): JsonResponse

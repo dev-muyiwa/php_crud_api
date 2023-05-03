@@ -2,21 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
     /**
-     * Returns a User model based on the id in the route.
+     * Returns the currently authenticated user
      *
-     * @param User $user
      * @return JsonResponse
      */
-    public function getUser(User $user): JsonResponse
+    public function getUser(): JsonResponse
     {
-//        $user->posts();
-//        $user->comments();
+        $user = Auth::user();
         return response()->json($user, 200);
+    }
+
+    public function updateUserCredentials(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        $user->update($request->all());
+        return redirect()->route("user-profile");
     }
 }

@@ -21,66 +21,46 @@ Route::prefix("auth")
     ->controller(AuthController::class)
     ->group(function () {
         Route::post('register', 'register');
-        Route::post('login', 'login');
+        Route::post('login', 'login')
+            ->middleware("checkEmailVerification");
         Route::post('logout', 'logout')->middleware('auth:sanctum');
+        Route::post("get-otp/{user}", "generateOtp")->name("get-otp");
+        Route::get("verify-otp", "verifyOtp")->name("verify-otp");
     });
 
-Route::prefix("users/{user}")
-    ->middleware(["auth:sanctum", "checkUserId"])
+Route::prefix("user/profile")
+    ->middleware("auth:sanctum")
+    ->controller(UserController::class)
     ->group(function () {
-        Route::get("", [UserController::class, "getUser"]);
-
-        Route::prefix("posts")
-            ->controller(PostController::class)
-            ->group(function () {
-                Route::get("", "getAllPosts");
-                Route::get("search", "searchPostsByTitle");
-                Route::post("", "createPost");
-
-                Route::middleware("checkResourceId")
-                    ->group(function () {
-                        Route::get("{post}", "getPost");
-                        Route::put("{post}", "updatePost");
-                        Route::delete("{post}", "deletePost");
-                        Route::controller(CommentController::class)
-                            ->post("{post}/comments", "createComment");
-                    });
-
-            });
-
-        Route::prefix("comments")
-            ->controller(CommentController::class)
-            ->group(function () {
-                Route::get("", "getAllComments");
-//                Route::post("", "createComment");
-            });
+        Route::get("", "getUser")->name("user-profile");
+        Route::put("edit", "updateUserCredentials");
     });
-
 
 Route::prefix("posts")
+    ->middleware("auth:sanctum")
     ->controller(PostController::class)
     ->group(function () {
-        Route::get("", "getAllPosts");
-        Route::get("search", "searchPostsByTitle");
+        Route::get("", "getAllPosts")->withoutMiddleware("auth:sanctum");
 
-        Route::middleware("auth:sanctum")
+        Route::post("", "createPost");
+        Route::get("{post}", "getPost");
+        Route::put("{post}", "updatePost")->middleware("checkResourceId");
+        Route::delete("{post}", "deletePost")->middleware("checkResourceId");
+
+
+        Route::controller(CommentController::class)
             ->group(function () {
-                Route::post("", "createPost");
-                Route::get("{post}", "getPost");
+                Route::get("{post}/comments", "getAllComments");
+                Route::post("{post}/comments", "createComment");
 
-                Route::middleware("checkResourceId")
-                    ->group(function () {
-                        Route::put("{post}", "updatePost");
-                        Route::delete("{post}", "deletePost");
-
-                        Route::controller(CommentController::class)
-                            ->withoutMiddleware("checkResourceId")
-                            ->group(function () {
-                                Route::get("{post}/comments", "getAllComments");
-                                Route::post("{post}/comments", "createComment");
-                            });
-                    });
+                Route::delete("{post}/comments/{comment}", "deleteComment")
+                    ->middleware("validateCommentAuthor");
             });
 
 
     });
+
+Route::name("404")->get("/404", function () {
+    return response()->json(["error" => "You're not logged in."]);
+});
+

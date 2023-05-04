@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NewOtpNotification;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -21,20 +24,13 @@ class AuthController extends Controller
             'email' => $fields['email'],
             'password' => bcrypt($fields['password'])
         ]);
-
-        // Add a middleware that checks if the user email is verified
-
-        // Redirect to the OTP route
-
         $token = $user->createToken('app_token')->plainTextToken;
+        $user->save();
 
-        $response = [
-            'user' => $user,
-            'token' => $token
-        ];
-
-        return response()
-            ->json($response, 201);
+        return self::onSuccess(
+            data: $token,
+            message: "Account created successfully.",
+            status: 201);
     }
 
     public function login(Request $request): JsonResponse
@@ -54,31 +50,7 @@ class AuthController extends Controller
         $token = $user->createToken('app_token')->plainTextToken;
         $user->save();
 
-        $response = [
-            'user' => $user,
-            'token' => $token
-        ];
-
-        return response()->json($response, 200);
-    }
-
-    public function generateOtp(User $user): JsonResponse
-    {
-//        $user = User::findOrFail($request->user);
-        $otp = rand(100_000, 999_999);
-//        Mail::to($user)->send(new NewOtpNotification($otp));
-        // Generate a new otp every 5 minute.
-        $test = $user->otp()->create(["otp" => $otp]);
-        // Store the otp to the database
-        return self::onSuccess(data: $test, message: "OTP has been generated and sent to the user", status: 201);
-//        return redirect()->route("verify-otp");
-    }
-
-    public function verifyOtp(Request $request)
-    {
-        // Check if the otp from the query is equal to that from the db
-        return response()->json($request->otp);
-        // return the auth token
+        return self::onSuccess(data: $token, message: "Login successful.");
     }
 
     public function logout(Request $request): JsonResponse

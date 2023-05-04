@@ -22,7 +22,7 @@ class Controller extends BaseController
         ], $status);
     }
 
-    public static function onError(string $message, object $data = null, int $status = ResponseAlias::HTTP_INTERNAL_SERVER_ERROR): JsonResponse
+    public static function onError(string $message, $data = null, int $status = ResponseAlias::HTTP_INTERNAL_SERVER_ERROR): JsonResponse
     {
         return response()->json([
             "success" => false,

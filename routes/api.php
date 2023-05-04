@@ -21,11 +21,8 @@ Route::prefix("auth")
     ->controller(AuthController::class)
     ->group(function () {
         Route::post('register', 'register');
-        Route::post('login', 'login')
-            ->middleware("checkEmailVerification");
+        Route::post('login', 'login');
         Route::post('logout', 'logout')->middleware('auth:sanctum');
-        Route::post("get-otp/{user}", "generateOtp")->name("get-otp");
-        Route::get("verify-otp", "verifyOtp")->name("verify-otp");
     });
 
 Route::prefix("user/profile")
@@ -34,6 +31,8 @@ Route::prefix("user/profile")
     ->group(function () {
         Route::get("", "getUser")->name("user-profile");
         Route::put("edit", "updateUserCredentials");
+        Route::post("get-otp/{user}", "generateOtp")->name("get-otp");
+        Route::post("verify-otp/{user}", "verifyOtp")->name("verify-otp");
     });
 
 Route::prefix("posts")
@@ -42,10 +41,10 @@ Route::prefix("posts")
     ->group(function () {
         Route::get("", "getAllPosts")->withoutMiddleware("auth:sanctum");
 
-        Route::post("", "createPost");
+        Route::post("", "createPost")->middleware("checkEmailVerification");
         Route::get("{post}", "getPost");
-        Route::put("{post}", "updatePost")->middleware("checkResourceId");
-        Route::delete("{post}", "deletePost")->middleware("checkResourceId");
+        Route::put("{post}", "updatePost")->middleware(["checkResourceId", "checkEmailVerification"]);
+        Route::delete("{post}", "deletePost")->middleware(["checkResourceId", "checkEmailVerification"]);
 
 
         Route::controller(CommentController::class)

@@ -19,14 +19,13 @@ class CheckEmailVerification
      */
     public function handle(Request $request, Closure $next): Response
     {
+        auth()->user()->email;
         $email = $request->email;
         $user = User::where('email', $email)->first();
-        if (!$user->verified) {
-//            return \response()->json($user->name);
-            // Redirect to the OTP route
-//            return redirect()->route("get-otp", ["user" => $user]);
+        if (!$user->email_verified_at) {
             return Controller::onError(
                 message: "User's email isn't verified. Redirect to the generate OTP endpoint",
+                data: $email,
                 status: 403
             );
         }

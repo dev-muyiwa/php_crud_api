@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\Controller;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -29,23 +30,24 @@ Route::prefix("user/profile")
     ->middleware("auth:sanctum")
     ->controller(UserController::class)
     ->group(function () {
+        Route::post("notify-user", "sendTestNotification");
+
         Route::get("", "getUser")->name("user-profile");
         Route::put("edit", "updateUserCredentials");
-        Route::post("get-otp/{user}", "generateOtp")->name("get-otp");
-        Route::post("verify-otp/{user}", "verifyOtp")->name("verify-otp");
+        Route::post("generate-otp", "generateOtp")->name("get-otp");
+        Route::post("verify-otp", "verifyOtp")->name("verify-otp");
     });
 
 Route::prefix("posts")
     ->middleware("auth:sanctum")
     ->controller(PostController::class)
     ->group(function () {
-        Route::get("", "getAllPosts")->withoutMiddleware("auth:sanctum");
+        Route::get("", "getAllPosts")->withoutMiddleware("auth:sanctum")->name("all-posts");
 
         Route::post("", "createPost")->middleware("checkEmailVerification");
         Route::get("{post}", "getPost");
         Route::put("{post}", "updatePost")->middleware(["checkResourceId", "checkEmailVerification"]);
         Route::delete("{post}", "deletePost")->middleware(["checkResourceId", "checkEmailVerification"]);
-
 
         Route::controller(CommentController::class)
             ->group(function () {
@@ -60,6 +62,6 @@ Route::prefix("posts")
     });
 
 Route::name("404")->get("/404", function () {
-    return response()->json(["error" => "You're not logged in."]);
+    return Controller::onError(message: "Unauthorised request.", status: 403);
 });
 

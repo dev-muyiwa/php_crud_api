@@ -17,11 +17,14 @@ class CommentController extends Controller
 {
     public function getAllComments(Post $post): JsonResponse
     {
-        return response()->json($post->comments()->get(), 200);
+        return self::onSuccess(data: $post->comments, message: "All comments have been retrieved.");
     }
 
     public function createComment(Request $request, Post $post): JsonResponse|\Illuminate\Foundation\Application|Redirector|RedirectResponse|Application
     {
+        if (empty($request->comment)) {
+            return self::onError(message: "Comment cannot be empty. Try again.", status: 401);
+        }
         $user = Auth::user();
         $comment = $post->comments()->create([
             "comment" => $request->comment,
@@ -31,12 +34,15 @@ class CommentController extends Controller
         $author = $comment->post->user;
         Mail::to($author)->send(new NewCommentNotification($comment));
 
-        return response()->json($comment, 201);
+        return self::onSuccess(
+            data: $comment->commenter_id,
+            message: "Comment has been created successfully.",
+            status: 201);
     }
 
     public function deleteComment(Post $post, int $comment): JsonResponse
     {
         Comment::findOrFail($comment)->delete();
-        return response()->json("Comment deleted.");
+        return self::onSuccess(data: "", message: "Post deleted successfully");
     }
 }

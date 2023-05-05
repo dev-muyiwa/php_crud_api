@@ -23,8 +23,7 @@ class PostController extends Controller
         $query = $request->input('q');
 //        try {
         if ($query) {
-            $posts = Post::where('title', 'like', '%' . $query . '%')
-                ->get();
+            $posts = Post::where('title', 'like', '%' . $query . '%')->get();
         } else {
             $posts = Post::all();
         }
@@ -45,10 +44,7 @@ class PostController extends Controller
      */
     public function getPost(Post $post): JsonResponse
     {
-        return $this->onSuccess(
-            data: $post,
-            message: "Post has been retrieved."
-        );
+        return $this->onSuccess(data: $post, message: "Post has been retrieved.");
     }
 
     /**
@@ -62,21 +58,20 @@ class PostController extends Controller
         $id = Auth::id();
         $user = User::findOrFail($id);
         $post = $user->posts()->create($request->all());
-        return response()->json($post, 201);
+        return self::onSuccess(data: $post, message: "Post created successfully", status: 201);
     }
 
     /**
      * Modifies the content of a post.
      *
      * @param Request $request
-     * @param User $user
      * @param Post $post
      * @return JsonResponse
      */
-    public function updatePost(Request $request, User $user, Post $post): JsonResponse
+    public function updatePost(Request $request, Post $post): JsonResponse
     {
         $post->update($request->all());
-        return response()->json($post);
+        return self::onSuccess(data: $post, message: "Post updated successfully");
     }
 
     /**

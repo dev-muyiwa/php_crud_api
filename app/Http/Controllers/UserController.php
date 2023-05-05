@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\NewOtpNotification;
-use App\Models\User;
+use App\Notifications\ExampleNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -31,23 +31,23 @@ class UserController extends Controller
         return redirect()->route("user-profile");
     }
 
-    public function generateOtp(User $user): JsonResponse
+    public function generateOtp(): JsonResponse
     {
+        $user = Auth::user();
         $otp = rand(100_000, 999_999);
-        //Send OTP to user email
         Mail::to($user)->send(new NewOtpNotification($otp));
-        // Store the otp to the database
         $user->otp()->updateOrCreate(["user_id" => $user->id], ["otp" => $otp]);
         return self::onSuccess(
-            data: ["user_id" => $user->id],
+            data: $user->id,
             message: "OTP has been generated and sent to the user",
             status: 201);
     }
 
-    public function verifyOtp(Request $request, User $user): JsonResponse
+    public function verifyOtp(Request $request): JsonResponse
     {
+        $user = Auth::user();
         $otp = $request->otp;
-        $userOtp = $user->otp;
+        $userOtp = Auth::user()->otp;
         if ($otp != $userOtp->otp) {
             return self::onError(message: "Invalid OTP", status: 401);
         }
@@ -56,11 +56,15 @@ class UserController extends Controller
         }
         $user->markEmailAsVerified();
         $user->otp()->delete();
-        // Generate a new auth token
         $token = $user->createToken('app_token')->plainTextToken;
         $user->save();
         return self::onSuccess(data: $token, message: "Email verified successfully");
-//        return response()->json($user);
-        // return the auth token
+    }
+
+    public function sendTestNotification()
+    {
+        $user = Auth::user();
+        $user->notify(new ExampleNotification());
+        return self::onSuccess(data: $user, message: "Email notification sent.");
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckEmailVerification
@@ -19,13 +20,10 @@ class CheckEmailVerification
      */
     public function handle(Request $request, Closure $next): Response
     {
-        auth()->user()->email;
-        $email = $request->email;
-        $user = User::where('email', $email)->first();
-        if (!$user->email_verified_at) {
+        if (!Auth::user()->email_verified_at) {
             return Controller::onError(
                 message: "User's email isn't verified. Redirect to the generate OTP endpoint",
-                data: $email,
+                data: Auth::user()->email,
                 status: 403
             );
         }

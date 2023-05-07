@@ -22,7 +22,7 @@ class NewOtpNotification extends Mailable
 
     public function build(): NewOtpNotification
     {
-        return $this->subject("Verify your Account")
+        return $this->subject("Email Verification Code: {{$this->otp}}")
             ->html("<p>Your One Time Pin is {$this->otp}. Expires in 5 minutes.</p>");
     }
 }

@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\NewOtpNotification;
+use App\Notifications\EmailVerificationWithOtp;
 use App\Notifications\ExampleNotification;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
@@ -21,7 +21,7 @@ class UserController extends Controller
     public function getUser(): JsonResponse
     {
         $user = Auth::user();
-        return response()->json($user, 200);
+        return self::onSuccess(data: $user, message: "User credentials obtained.");
     }
 
     public function updateUserCredentials(Request $request): RedirectResponse
@@ -35,8 +35,8 @@ class UserController extends Controller
     {
         $user = Auth::user();
         $otp = rand(100_000, 999_999);
-        Mail::to($user)->send(new NewOtpNotification($otp));
-        $user->otp()->updateOrCreate(["user_id" => $user->id], ["otp" => $otp]);
+        $user->notify(new EmailVerificationWithOtp($otp));
+        $user->otp()->updateOrCreate(["otp" => $otp]);
         return self::onSuccess(
             data: $user->id,
             message: "OTP has been generated and sent to the user",
@@ -45,20 +45,32 @@ class UserController extends Controller
 
     public function verifyOtp(Request $request): JsonResponse
     {
-        $user = Auth::user();
-        $otp = $request->otp;
-        $userOtp = Auth::user()->otp;
-        if ($otp != $userOtp->otp) {
-            return self::onError(message: "Invalid OTP", status: 401);
+        try {
+            $user = Auth::user();
+            $otp = $request->otp;
+            $userOtp = Auth::user()->otp;
+
+            if ($user->hasVerifiedEmail()) {
+                throw new Exception(message: "User is already verified", code: 403);
+            }
+
+            if ($otp != $userOtp->otp) {
+                throw new Exception(message: "Invalid OTP", code: 401);
+            }
+
+            if (Carbon::now()->timestamp >= $userOtp->expires_at) {
+                throw new Exception(message: "OTP provided has expired. Generate a new OTP", code: 401);
+            }
+
+            $user->markEmailAsVerified();
+            $user->otp()->delete();
+            $token = $user->createToken('app_token')->plainTextToken;
+            $user->save();
+
+            return self::onSuccess(data: $token, message: "Email verified successfully");
+        } catch (Exception $e) {
+            return self::onError($e->getMessage(), status: $e->getCode());
         }
-        if (Carbon::now()->timestamp >= $userOtp->expires_at) {
-            return self::onError(message: "OTP provided has expired. Generate a new OTP", status: 401);
-        }
-        $user->markEmailAsVerified();
-        $user->otp()->delete();
-        $token = $user->createToken('app_token')->plainTextToken;
-        $user->save();
-        return self::onSuccess(data: $token, message: "Email verified successfully");
     }
 
     public function sendTestNotification()

@@ -42,7 +42,7 @@ Route::prefix("posts")
     ->middleware("auth:sanctum")
     ->controller(PostController::class)
     ->group(function () {
-        Route::get("", "getAllPosts")->withoutMiddleware("auth:sanctum")->name("all-posts");
+        Route::get("", "getAllPosts")->name("all-posts");
 
         Route::post("", "createPost")->middleware("checkEmailVerification");
         Route::get("{post}", "getPost");

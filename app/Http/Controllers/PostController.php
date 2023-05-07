@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,21 +21,22 @@ class PostController extends Controller
      */
     public function getAllPosts(Request $request): JsonResponse
     {
-        $query = $request->input('q');
-//        try {
-        if ($query) {
-            $posts = Post::where('title', 'like', '%' . $query . '%')->get();
-        } else {
-            $posts = Post::all();
+        $key = key($request->query());
+        try {
+            if ($key == "q") {
+                $query = $request->input('q');
+                $posts = Post::where('title', 'like', '%' . $query . '%')->get();
+            } elseif ($key == "") {
+                $posts = Post::all();
+            } else {
+                throw new Exception(message: "Invalid query name =>" . key($request->query()), code: 400);
+            }
+
+            return $this::onSuccess(data: $posts, message: "Post(s) retrieved.");
+        } catch (Exception $e) {
+            return $this::onError(message: $e->getMessage(), status: $e->getCode());
         }
-
-        return response()->json($posts, 200);
-//        } catch (Exception $e) {
-//            if ($query == null)
-//            return $this->onError(message: "Invalid query type.");
-//        }
     }
-
 
     /**
      * Returns a post.
@@ -42,9 +44,10 @@ class PostController extends Controller
      * @param Post $post
      * @return JsonResponse
      */
-    public function getPost(Post $post): JsonResponse
+    public
+    function getPost(Post $post): JsonResponse
     {
-        return $this->onSuccess(data: $post, message: "Post has been retrieved.");
+        return $this::onSuccess(data: $post, message: "Post has been retrieved.");
     }
 
     /**
@@ -53,12 +56,12 @@ class PostController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function createPost(Request $request): JsonResponse
+    public
+    function createPost(Request $request): JsonResponse
     {
-        $id = Auth::id();
-        $user = User::findOrFail($id);
+        $user = Auth::user();
         $post = $user->posts()->create($request->all());
-        return self::onSuccess(data: $post, message: "Post created successfully", status: 201);
+        return self::onSuccess(data: $post, message: "Post created successfully.", status: 201);
     }
 
     /**
@@ -68,10 +71,11 @@ class PostController extends Controller
      * @param Post $post
      * @return JsonResponse
      */
-    public function updatePost(Request $request, Post $post): JsonResponse
+    public
+    function updatePost(Request $request, Post $post): JsonResponse
     {
-        $post->update($request->all());
-        return self::onSuccess(data: $post, message: "Post updated successfully");
+//        $post->update($request->all());
+        return self::onSuccess(data: $request->input('content'), message: "Post updated successfully");
     }
 
     /**
@@ -81,7 +85,8 @@ class PostController extends Controller
      * @param Post $post
      * @return JsonResponse
      */
-    public function deletePost(User $user, Post $post): JsonResponse
+    public
+    function deletePost(User $user, Post $post): JsonResponse
     {
         $post->delete();
         return response()->json("Post " . $post->id . " deleted successfully.");

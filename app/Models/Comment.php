@@ -11,6 +11,8 @@ class Comment extends Model
     use HasFactory;
     protected $fillable = ["comment", "commenter_id"];
 
+    protected $hidden = ["post"];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

@@ -74,8 +74,8 @@ class PostController extends Controller
     public
     function updatePost(Request $request, Post $post): JsonResponse
     {
-//        $post->update($request->all());
-        return self::onSuccess(data: $request->input('content'), message: "Post updated successfully");
+        $post->update($request->all());
+        return self::onSuccess(data: $post, message: "Post updated successfully");
     }
 
     /**
@@ -86,9 +86,14 @@ class PostController extends Controller
      * @return JsonResponse
      */
     public
-    function deletePost(User $user, Post $post): JsonResponse
+    function deletePost(User $user, int $post_id): JsonResponse
     {
-        $post->delete();
-        return response()->json("Post " . $post->id . " deleted successfully.");
+        try {
+            $post = Post::find($post_id);
+            $post->delete();
+            return self::onSuccess(data: null, message: "Post deleted successfully.");
+        } catch (Exception $e) {
+            return self::onError($e->getMessage(), $e->getCode());
+        }
     }
 }

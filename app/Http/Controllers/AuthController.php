@@ -29,11 +29,13 @@ class AuthController extends Controller
             'email' => $fields['email'],
             'password' => bcrypt($fields['password'])
         ]);
-        $token = $user->createToken('app_token')->plainTextToken;
-        $user->save();
+//        $token = $user->createToken('app_token')->plainTextToken;
+//        $user->save();
+
+        $response = ["user" => $user];
 
         return self::onSuccess(
-            data: $token,
+            data: $response,
             message: "Account created successfully.",
             status: 201);
     }
@@ -56,13 +58,14 @@ class AuthController extends Controller
 
         $token = $user->createToken('app_token')->plainTextToken;
         $user->save();
+        $response = ["token" => $token];
 
-        return self::onSuccess(data: $token, message: "Login successful.");
+        return self::onSuccess(data: $response, message: "Login successful.");
     }
 
     public function logout(): JsonResponse
     {
         auth()->user()->tokens()->delete();
-        return self::onSuccess(data: "", message: "User logged out successfully.");
+        return self::onSuccess(data: null, message: "User logged out successfully.");
     }
 }

@@ -2,16 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\NewCommentNotification;
 use App\Models\Comment;
 use App\Models\Post;
-use Illuminate\Contracts\Foundation\Application;
+use App\Notifications\NewComment;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 
 class CommentController extends Controller
 {
@@ -20,7 +16,7 @@ class CommentController extends Controller
         return self::onSuccess(data: $post->comments, message: "All comments have been retrieved.");
     }
 
-    public function createComment(Request $request, Post $post): JsonResponse|\Illuminate\Foundation\Application|Redirector|RedirectResponse|Application
+    public function createComment(Request $request, Post $post): JsonResponse
     {
         if (empty($request->comment)) {
             return self::onError(message: "Comment cannot be empty. Try again.", status: 401);
@@ -32,17 +28,19 @@ class CommentController extends Controller
         ]);
 
         $author = $comment->post->user;
-        Mail::to($author)->send(new NewCommentNotification($comment));
+        $author->notify(new NewComment($comment));
+
+        $response = ["comment" => $comment];
 
         return self::onSuccess(
-            data: $comment->commenter_id,
+            data: $response,
             message: "Comment has been created successfully.",
             status: 201);
     }
 
     public function deleteComment(Post $post, int $comment): JsonResponse
     {
-        Comment::findOrFail($comment)->delete();
-        return self::onSuccess(data: "", message: "Post deleted successfully");
+        Comment::find($comment)->delete();
+        return self::onSuccess(data: null, message: "Post deleted successfully");
     }
 }

@@ -2,20 +2,23 @@
 
 namespace App\Notifications;
 
+use App\Models\Comment;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class ExampleNotification extends Notification
+class NewComment extends Notification
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct()
+    public function __construct(
+        protected Comment $comment
+    )
     {
-        //
     }
 
     /**
@@ -33,13 +36,14 @@ class ExampleNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $id = $this->comment->commenter_id;
+        $commenter = User::find($id);
         return (new MailMessage)
-//            ->error()
-            ->subject("Post Notification")
-            ->greeting("Hello ".$notifiable->name.",")
-            ->line('You can now view all of the the posts in the database.')
-            ->action("View all posts", url(route("all-posts")))
-            ->line('Thank you for using our application!');
+            ->subject("New comment: {$this->comment->comment}")
+            ->line("There is a new comment on your post, $notifiable->name.")
+            ->line("by $commenter->name")
+            ->line("Comment: ")
+            ->line("`{$this->comment->comment}`");
     }
 
     /**

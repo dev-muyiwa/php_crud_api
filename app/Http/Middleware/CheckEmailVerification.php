@@ -23,7 +23,6 @@ class CheckEmailVerification
         if (!Auth::user()->email_verified_at) {
             return Controller::onError(
                 message: "User's email isn't verified. Redirect to the generate OTP endpoint",
-                data: Auth::user()->email,
                 status: 403
             );
         }

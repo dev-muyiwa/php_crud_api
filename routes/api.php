@@ -26,14 +26,13 @@ Route::prefix("auth")
         Route::post('logout', 'logout')->middleware('auth:sanctum');
     });
 
-Route::prefix("user/profile")
+Route::prefix("user")
     ->middleware("auth:sanctum")
     ->controller(UserController::class)
     ->group(function () {
-        Route::post("notify-user", "sendTestNotification");
 
-        Route::get("", "getUser")->name("user-profile");
-        Route::put("edit", "updateUserCredentials");
+        Route::get("profile", "getUser")->name("user-profile");
+        Route::put("profile/edit", "updateUserCredentials");
         Route::post("generate-otp", "generateOtp")->name("get-otp");
         Route::post("verify-otp", "verifyOtp")->name("verify-otp");
     });

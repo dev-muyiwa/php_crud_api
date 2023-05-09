@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\Controller;
 use App\Models\Comment;
 use Closure;
 use Illuminate\Http\Request;
@@ -13,16 +14,21 @@ class ValidateCommentAuthor
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param Request $request
+     * @param Closure(Request): (Response) $next
+     * @return Response
      */
     public function handle(Request $request, Closure $next): Response
     {
         $commentId = $request->route()->parameter("comment");
-        $authorId = Comment::findOrFail($commentId)->commenter_id;
-        $userId = Auth::id();
+        $comment = Comment::find($commentId);
+        if ($comment == null) {
+            return Controller::onError(message: "Comment doesn't exist.", status: 404);
+        }
+        $authorId = $comment->commenter_id;
 
-        if ($authorId != $userId) {
-            return response()->json(['error' => 'You are not authorized to access this resource.'], 403);
+        if (Auth::id() != $authorId) {
+            return Controller::onError(message: "You are not authorized to modify this resource.", status: 403);
         }
         return $next($request);
     }

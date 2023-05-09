@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Notifications\EmailVerificationWithOtp;
-use App\Notifications\ExampleNotification;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -37,8 +36,10 @@ class UserController extends Controller
         $otp = rand(100_000, 999_999);
         $user->notify(new EmailVerificationWithOtp($otp));
         $user->otp()->updateOrCreate(["otp" => $otp]);
+        $response = ["user_id" => $user->id];
+
         return self::onSuccess(
-            data: $user->id,
+            data: $response,
             message: "OTP has been generated and sent to the user",
             status: 201);
     }
@@ -64,19 +65,11 @@ class UserController extends Controller
 
             $user->markEmailAsVerified();
             $user->otp()->delete();
-            $token = $user->createToken('app_token')->plainTextToken;
-            $user->save();
+            $response = ["user_id" => $user->id];
 
-            return self::onSuccess(data: $token, message: "Email verified successfully");
+            return self::onSuccess(data: $response, message: "Email verified successfully");
         } catch (Exception $e) {
             return self::onError($e->getMessage(), status: $e->getCode());
         }
-    }
-
-    public function sendTestNotification()
-    {
-        $user = Auth::user();
-        $user->notify(new ExampleNotification());
-        return self::onSuccess(data: $user, message: "Email notification sent.");
     }
 }
